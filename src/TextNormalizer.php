@@ -21,7 +21,7 @@ final readonly class TextNormalizer
 
     /**
      * Diacritics are removed by Unicode canonical decomposition rather than by
-     * a hand-written table: NFD reaches every decomposable letter in every
+     * a handwritten table: NFD reaches every decomposable letter in every
      * script, where a table only ever covers the ones someone remembered.
      * The profile handles what decomposition cannot — letters that carry no
      * mark to strip, and orthographic equivalences Unicode keeps distinct.
