@@ -21,13 +21,21 @@ final readonly class TextNormalizer
 
     /**
      * Diacritics are removed by Unicode canonical decomposition rather than by
-     * a hand-written table: NFD reaches every decomposable letter in every
+     * a handwritten table: NFD reaches every decomposable letter in every
      * script, where a table only ever covers the ones someone remembered.
      * The profile handles what decomposition cannot — letters that carry no
      * mark to strip, and orthographic equivalences Unicode keeps distinct.
      */
     public function normalize(string $text): string
     {
+        // Folding has no meaning for input that is not UTF-8: mb_strtolower
+        // replaces every malformed byte with '?', which the separator pass
+        // below then erases, turning the whole string into ''. Returning the
+        // input untouched keeps a broken encoding visible to the caller.
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            return $text;
+        }
+
         $text = mb_strtolower($text, 'UTF-8');
 
         foreach ($this->profile->strippedPatterns as $pattern) {
