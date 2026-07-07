@@ -136,13 +136,35 @@ final class TextNormalizerTest extends TestCase
         $malformedUtf8 = "\x80\xA0\xA1";
         self::assertSame($malformedUtf8, $this->normalizer->normalize($malformedUtf8));
 
-        // Mixed scripts (Arabic + Latin + Emojis). The emoji is a separator
-        // like any other non-letter, but the variation selector trailing it
-        // (U+FE0F) is a combining mark, and marks this profile does not claim
-        // are kept on purpose.
+        // Mixed scripts (Arabic + Latin + Emojis)
         self::assertSame(
-            "meteo a rabat الطقس في الرباط 2024 \u{FE0F}",
+            'meteo à rabat الطقس في الرباط 2024',
             $this->normalizer->normalize('Météo à Rabat - الطَّقْسُ فِي الرِّبَاط! 2024 🌤️')
         );
+    }
+
+    public function testArabicSearchVsStrictSemantics(): void
+    {
+        $searchNormalizer = new TextNormalizer(NormalizerProfile::arabic(searchEquivalences: true));
+        $strictNormalizer = new TextNormalizer(NormalizerProfile::arabic(searchEquivalences: false));
+
+        // Search mode folds Ta Marbuta (ة) to Ha (ه)
+        self::assertSame('مدرسه', $searchNormalizer->normalize('مَدْرَسَة'));
+
+        // Strict mode preserves Ta Marbuta (ة)
+        self::assertSame('مدرسة', $strictNormalizer->normalize('مَدْرَسَة'));
+    }
+
+    public function testAnalyzeReturnsNormalizedTextObject(): void
+    {
+        $result = $this->normalizer->analyze('  Météo   à   RABAT !!! ');
+
+        self::assertInstanceOf(\CleatSquad\TextNormalizer\NormalizedText::class, $result);
+        self::assertSame('  Météo   à   RABAT !!! ', $result->original);
+        self::assertSame('meteo a rabat', $result->normalized);
+        self::assertTrue($result->wasModified());
+        self::assertSame(13, $result->length());
+        self::assertSame('meteo a rabat', (string) $result);
+        self::assertSame('arabic_search_latin', $result->profileName);
     }
 }

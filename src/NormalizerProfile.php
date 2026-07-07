@@ -21,6 +21,7 @@ final readonly class NormalizerProfile
         public array $characterMap = [],
         public array $strippedPatterns = [],
         public array $foldedMarkPatterns = [],
+        public string $name = 'custom',
     ) {
     }
 
@@ -32,15 +33,19 @@ final readonly class NormalizerProfile
      */
     public static function latin(): self
     {
-        return new self([
-            'æ' => 'ae', 'œ' => 'oe', 'ß' => 'ss',
-            'ø' => 'o', 'ł' => 'l', 'đ' => 'd', 'ð' => 'd', 'þ' => 'th',
-            'ħ' => 'h', 'ı' => 'i', 'ŋ' => 'n', 'ŧ' => 't', 'ƶ' => 'z',
-        ], foldedMarkPatterns: [
-            // Combining Diacritical Marks, and the Latin Extended Additional
-            // ones below-dot letters decompose into.
-            '/[\x{0300}-\x{036F}\x{1AB0}-\x{1AFF}\x{1DC0}-\x{1DFF}\x{20D0}-\x{20F0}]/u',
-        ]);
+        return new self(
+            characterMap: [
+                'æ' => 'ae', 'œ' => 'oe', 'ß' => 'ss',
+                'ø' => 'o', 'ł' => 'l', 'đ' => 'd', 'ð' => 'd', 'þ' => 'th',
+                'ħ' => 'h', 'ı' => 'i', 'ŋ' => 'n', 'ŧ' => 't', 'ƶ' => 'z',
+            ],
+            foldedMarkPatterns: [
+                // Combining Diacritical Marks, and the Latin Extended Additional
+                // ones below-dot letters decompose into.
+                '/[\x{0300}-\x{036F}\x{1AB0}-\x{1AFF}\x{1DC0}-\x{1DFF}\x{20D0}-\x{20F0}]/u',
+            ],
+            name: 'latin'
+        );
     }
 
     /**
@@ -48,27 +53,35 @@ final readonly class NormalizerProfile
      * Urdu keyboard produces different code points that Unicode considers
      * distinct letters, so no normalization form unifies them. Harakat are not
      * listed — they are combining marks, and NFD strips them.
+     *
+     * @param bool $searchEquivalences If true (default), folds search conventions like ة -> ه.
+     *                                 If false, strict Unicode normalization preserves ة.
      */
-    public static function arabic(): self
+    public static function arabic(bool $searchEquivalences = true): self
     {
+        $map = [
+            // Alif variants, incl. the Alif Wasla decomposition misses.
+            'ٱ' => 'ا',
+            // Alef Maksura and Farsi/Urdu Yeh folded to Arabic Yeh.
+            'ى' => 'ي', 'ی' => 'ي', 'ې' => 'ي', 'ۍ' => 'ي',
+            // Keheh (Persian/Urdu Kaf) folded to Arabic Kaf.
+            'ک' => 'ك', 'ګ' => 'ك',
+            // Heh Goal / Heh Doachashmee folded to Heh.
+            'ہ' => 'ه', 'ھ' => 'ه',
+            // Arabic-Indic and Extended Arabic-Indic digits.
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+            '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+        ];
+
+        if ($searchEquivalences) {
+            // Ta Marbuta folded to Ha for search index equivalence conventions.
+            $map['ة'] = 'ه';
+        }
+
         return new self(
-            characterMap: [
-                // Alif variants, incl. the Alif Wasla decomposition misses.
-                'ٱ' => 'ا',
-                // Ta Marbuta folded to Ha, as search indexes conventionally do.
-                'ة' => 'ه',
-                // Alef Maksura and Farsi/Urdu Yeh folded to Arabic Yeh.
-                'ى' => 'ي', 'ی' => 'ي', 'ې' => 'ي', 'ۍ' => 'ي',
-                // Keheh (Persian/Urdu Kaf) folded to Arabic Kaf.
-                'ک' => 'ك', 'ګ' => 'ك',
-                // Heh Goal / Heh Doachashmee folded to Heh.
-                'ہ' => 'ه', 'ھ' => 'ه',
-                // Arabic-Indic and Extended Arabic-Indic digits.
-                '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
-                '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
-                '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
-                '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
-            ],
+            characterMap: $map,
             strippedPatterns: [
                 // Tatweel/Kashida: decorative elongation, never lexical.
                 '/\x{0640}/u',
@@ -81,13 +94,14 @@ final readonly class NormalizerProfile
                 // decomposition peels off Alif and Yeh variants.
                 '/[\x{064B}-\x{0655}\x{0670}]/u',
             ],
+            name: $searchEquivalences ? 'arabic_search' : 'arabic_strict'
         );
     }
 
     /** Every profile shipped with the package. */
-    public static function all(): self
+    public static function all(bool $searchEquivalences = true): self
     {
-        return self::arabic()->merge(self::latin());
+        return self::arabic($searchEquivalences)->merge(self::latin());
     }
 
     public function merge(self $other): self
@@ -96,6 +110,7 @@ final readonly class NormalizerProfile
             [...$this->characterMap, ...$other->characterMap],
             [...$this->strippedPatterns, ...$other->strippedPatterns],
             [...$this->foldedMarkPatterns, ...$other->foldedMarkPatterns],
+            name: $this->name . '_' . $other->name,
         );
     }
 }
