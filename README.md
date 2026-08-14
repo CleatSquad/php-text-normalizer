@@ -101,7 +101,7 @@ one are two different strings, and your index answers nothing.
 
 **Idempotent.** Normalizing an already-normalized string returns it unchanged.
 
-**Output stays in NFC**, so it is safe to store and compare byte-wise.
+**Output stays in NFC** whenever valid UTF-8 Unicode normalization succeeds, making it safe to store and compare byte-wise. Malformed UTF-8 inputs are returned untouched rather than converted to an empty string.
 
 **Combining marks a profile does not claim are preserved**, attached to their
 letter rather than treated as word boundaries.

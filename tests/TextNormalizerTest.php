@@ -82,4 +82,64 @@ final class TextNormalizerTest extends TestCase
         self::assertSame('invoice 42', $this->normalizer->normalize('invoice_42'));
         self::assertSame(['token', '2024'], $this->normalizer->tokenize('token-2024'));
     }
+
+    /**
+     * Property test: Idempotence across multiple diverse sample strings.
+     */
+    public function testPropertyIdempotence(): void
+    {
+        $samples = [
+            'Quelle est la MÉTÉO à Rabat ?',
+            'مَدْرَسَةٌ كَبِيرَةٌ',
+            'Košice, Ṣāliḥ & Đà Nẵng!',
+            '  Multiple   Spaces   &   Punctuation...  ',
+            'emoji 🚀 test 123',
+            'علي vs علی',
+        ];
+
+        foreach ($samples as $sample) {
+            $normalizedOnce = $this->normalizer->normalize($sample);
+            $normalizedTwice = $this->normalizer->normalize($normalizedOnce);
+
+            self::assertSame(
+                $normalizedOnce,
+                $normalizedTwice,
+                sprintf("Failed idempotence for sample: '%s'", $sample)
+            );
+        }
+    }
+
+    /**
+     * Negative collision test: Distinct words should NOT collide.
+     */
+    public function testNegativeCollisions(): void
+    {
+        // Hamza (ء) preservation should prevent collapse of distinct words
+        self::assertNotSame(
+            $this->normalizer->normalize('ماء'),
+            $this->normalizer->normalize('ما')
+        );
+
+        // Distinct Latin words with different base letters must remain distinct
+        self::assertNotSame(
+            $this->normalizer->normalize('cote'),
+            $this->normalizer->normalize('code')
+        );
+    }
+
+    /**
+     * Edge case test: Malformed UTF-8 and mixed scripts.
+     */
+    public function testUnicodeEdgeCases(): void
+    {
+        // Malformed UTF-8 sequence should not throw or return empty string silently
+        $malformedUtf8 = "\x80\xA0\xA1";
+        self::assertSame($malformedUtf8, $this->normalizer->normalize($malformedUtf8));
+
+        // Mixed scripts (Arabic + Latin + Emojis)
+        self::assertSame(
+            'meteo à rabat الطقس في الرباط 2024',
+            $this->normalizer->normalize('Météo à Rabat - الطَّقْسُ فِي الرِّبَاط! 2024 🌤️')
+        );
+    }
 }
