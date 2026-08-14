@@ -50,15 +50,30 @@ $normalizer->tokenize('token-2024');
 // ['token', '2024']
 ```
 
+### Analyzing text with metadata
+
+```php
+$result = $normalizer->analyze('  Météo   à   RABAT !!! ');
+
+$result->normalized;    // "meteo a rabat"
+$result->original;      // "  Météo   à   RABAT !!! "
+$result->wasModified(); // true
+$result->length();      // 13
+$result->profileName;   // "arabic_search_latin"
+```
+
 ### Script profiles
 
 ```php
 use CleatSquad\TextNormalizer\NormalizerProfile;
 
-new TextNormalizer(NormalizerProfile::latin());   // Latin only
-new TextNormalizer(NormalizerProfile::arabic());  // Arabic only
-new TextNormalizer(NormalizerProfile::all());     // default
-new TextNormalizer(new NormalizerProfile());      // punctuation only, folds nothing
+new TextNormalizer(NormalizerProfile::latin());                    // Latin only
+new TextNormalizer(NormalizerProfile::arabic());                   // Arabic search mode (ة -> ه)
+new TextNormalizer(NormalizerProfile::arabic(searchEquivalences: false)); // Arabic strict mode (preserves ة)
+new TextNormalizer(NormalizerProfile::cyrillic());                 // Cyrillic (ё -> е, і/ї -> i)
+new TextNormalizer(NormalizerProfile::greek());                    // Greek (ς -> σ, tonos stripped)
+new TextNormalizer(NormalizerProfile::all());                      // default (all scripts)
+new TextNormalizer(new NormalizerProfile());                       // punctuation only, folds nothing
 ```
 
 Profiles are scoped: a Latin profile leaves Arabic harakat exactly where they

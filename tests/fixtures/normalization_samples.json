@@ -1,0 +1,22 @@
+[
+  {
+    "script": "Latin",
+    "original": "Météo à Rabat - L'élève de l'école!",
+    "expected": "meteo a rabat l eleve de l ecole"
+  },
+  {
+    "script": "Arabic",
+    "original": "مَا هِيَ حَالَةُ الطَّقْسِ فِي الرِّبَاط؟ مَدْرَسَةٌ كَبِيرَةٌ.",
+    "expected": "ما هي حاله الطقس في الرباط مدرسه كبيره"
+  },
+  {
+    "script": "Cyrillic",
+    "original": "Ёлка, Киев и Київ - Привет мир!",
+    "expected": "елка киев и киiв привет мир"
+  },
+  {
+    "script": "Greek",
+    "original": "Αθήνα, Άγγελος και Φίλιππος! ς",
+    "expected": "αθηνα αγγελοσ και φιλιπποσ σ"
+  }
+]

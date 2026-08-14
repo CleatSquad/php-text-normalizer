@@ -168,6 +168,39 @@ final class TextNormalizerTest extends TestCase
         self::assertTrue($result->wasModified());
         self::assertSame(13, $result->length());
         self::assertSame('meteo a rabat', (string) $result);
-        self::assertSame('arabic_search_latin', $result->profileName);
+        self::assertSame('arabic_search_latin_cyrillic_greek', $result->profileName);
+    }
+
+    public function testCyrillicAndGreekProfiles(): void
+    {
+        $cyrillicNormalizer = new TextNormalizer(NormalizerProfile::cyrillic());
+        self::assertSame('елка киiв привет', $cyrillicNormalizer->normalize('Ёлка, Київ привет!'));
+
+        $greekNormalizer = new TextNormalizer(NormalizerProfile::greek());
+        // Final sigma folds wherever it stands: the whole point is that
+        // 'αγγελος' and 'αγγελοσ' must not index as two different words.
+        self::assertSame('αθηνα αγγελοσ σ', $greekNormalizer->normalize('Αθήνα, Άγγελος! ς'));
+    }
+
+    public function testMultiScriptJsonFixtures(): void
+    {
+        $fixtureJson = file_get_contents(__DIR__ . '/fixtures/normalization_samples.json');
+        self::assertIsString($fixtureJson);
+
+        $fixtures = json_decode($fixtureJson, true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixtures);
+
+        foreach ($fixtures as $fixture) {
+            self::assertIsArray($fixture);
+            self::assertIsString($fixture['script']);
+            self::assertIsString($fixture['original']);
+            self::assertIsString($fixture['expected']);
+
+            self::assertSame(
+                $fixture['expected'],
+                $this->normalizer->normalize($fixture['original']),
+                sprintf('Failed fixture for script: %s', $fixture['script'])
+            );
+        }
     }
 }
