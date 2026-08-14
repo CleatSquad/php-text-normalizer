@@ -168,6 +168,30 @@ final class TextNormalizerTest extends TestCase
         self::assertTrue($result->wasModified());
         self::assertSame(13, $result->length());
         self::assertSame('meteo a rabat', (string) $result);
-        self::assertSame('arabic_search_latin', $result->profileName);
+        self::assertSame('arabic_search_latin_cyrillic_greek', $result->profileName);
+    }
+
+    public function testCyrillicAndGreekProfiles(): void
+    {
+        $cyrillicNormalizer = new TextNormalizer(NormalizerProfile::cyrillic());
+        self::assertSame('елка киiв привет', $cyrillicNormalizer->normalize('Ёлка, Київ привет!'));
+
+        $greekNormalizer = new TextNormalizer(NormalizerProfile::greek());
+        self::assertSame('αθηνα αγγελος σ', $greekNormalizer->normalize('Αθήνα, Άγγελος! ς'));
+    }
+
+    public function testMultiScriptJsonFixtures(): void
+    {
+        $fixturePath = __DIR__ . '/fixtures/normalization_samples.json';
+        $fixtures = json_decode(file_get_contents($fixturePath), true, 512, JSON_THROW_ON_ERROR);
+
+        foreach ($fixtures as $fixture) {
+            $normalized = $this->normalizer->normalize($fixture['original']);
+            self::assertSame(
+                $fixture['expected'],
+                $normalized,
+                sprintf("Failed fixture for script: %s", $fixture['script'])
+            );
+        }
     }
 }

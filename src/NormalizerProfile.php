@@ -98,10 +98,51 @@ final readonly class NormalizerProfile
         );
     }
 
+    /**
+     * Cyrillic folding rules for non-decomposable letters like Yo (ё -> е),
+     * Ukrainian/Belarusian letters (і, ї -> i).
+     */
+    public static function cyrillic(): self
+    {
+        return new self(
+            characterMap: [
+                'ё' => 'е', 'Ё' => 'е',
+                'і' => 'i', 'І' => 'i',
+                'ї' => 'i', 'Ї' => 'i',
+                'ў' => 'у', 'Ў' => 'у',
+                'ґ' => 'г', 'Ґ' => 'г',
+            ],
+            foldedMarkPatterns: [
+                '/[\x{0300}-\x{036F}]/u',
+            ],
+            name: 'cyrillic'
+        );
+    }
+
+    /**
+     * Greek folding rules: final sigma (ς -> σ), symbol equivalences.
+     * Accent/tonos folding is handled via NFD canonical decomposition.
+     */
+    public static function greek(): self
+    {
+        return new self(
+            characterMap: [
+                'ς' => 'σ',
+            ],
+            foldedMarkPatterns: [
+                '/[\x{0300}-\x{036F}\x{1FE0}-\x{1FEF}]/u',
+            ],
+            name: 'greek'
+        );
+    }
+
     /** Every profile shipped with the package. */
     public static function all(bool $searchEquivalences = true): self
     {
-        return self::arabic($searchEquivalences)->merge(self::latin());
+        return self::arabic($searchEquivalences)
+            ->merge(self::latin())
+            ->merge(self::cyrillic())
+            ->merge(self::greek());
     }
 
     public function merge(self $other): self
