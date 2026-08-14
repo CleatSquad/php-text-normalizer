@@ -67,6 +67,21 @@ final readonly class TextNormalizer
     }
 
     /**
+     * Normalizes the given text and returns a NormalizedText result object containing
+     * the original input, normalized string, and profile metadata.
+     */
+    public function analyze(string $text): NormalizedText
+    {
+        $normalized = $this->normalize($text);
+
+        return new NormalizedText(
+            original: $text,
+            normalized: $normalized,
+            profileName: $this->profile->name,
+        );
+    }
+
+    /**
      * Normalization fails on malformed UTF-8, where it returns false rather
      * than throwing. The input is then left as it is: unfoldable, but never
      * silently replaced by an empty string.
