@@ -177,20 +177,29 @@ final class TextNormalizerTest extends TestCase
         self::assertSame('елка киiв привет', $cyrillicNormalizer->normalize('Ёлка, Київ привет!'));
 
         $greekNormalizer = new TextNormalizer(NormalizerProfile::greek());
-        self::assertSame('αθηνα αγγελος σ', $greekNormalizer->normalize('Αθήνα, Άγγελος! ς'));
+        // Final sigma folds wherever it stands: the whole point is that
+        // 'αγγελος' and 'αγγελοσ' must not index as two different words.
+        self::assertSame('αθηνα αγγελοσ σ', $greekNormalizer->normalize('Αθήνα, Άγγελος! ς'));
     }
 
     public function testMultiScriptJsonFixtures(): void
     {
-        $fixturePath = __DIR__ . '/fixtures/normalization_samples.json';
-        $fixtures = json_decode(file_get_contents($fixturePath), true, 512, JSON_THROW_ON_ERROR);
+        $fixtureJson = file_get_contents(__DIR__ . '/fixtures/normalization_samples.json');
+        self::assertIsString($fixtureJson);
+
+        $fixtures = json_decode($fixtureJson, true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixtures);
 
         foreach ($fixtures as $fixture) {
-            $normalized = $this->normalizer->normalize($fixture['original']);
+            self::assertIsArray($fixture);
+            self::assertIsString($fixture['script']);
+            self::assertIsString($fixture['original']);
+            self::assertIsString($fixture['expected']);
+
             self::assertSame(
                 $fixture['expected'],
-                $normalized,
-                sprintf("Failed fixture for script: %s", $fixture['script'])
+                $this->normalizer->normalize($fixture['original']),
+                sprintf('Failed fixture for script: %s', $fixture['script'])
             );
         }
     }
