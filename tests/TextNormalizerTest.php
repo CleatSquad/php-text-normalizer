@@ -203,4 +203,17 @@ final class TextNormalizerTest extends TestCase
             );
         }
     }
+
+    public function testHashAndSlugify(): void
+    {
+        $hash1 = $this->normalizer->hash("L'adresse email de l'utilisateur est test@domain.com");
+        $hash2 = $this->normalizer->hash("L’adresse   EMAIL de l’utilisateur est test@domain.com.");
+        self::assertSame($hash1, $hash2);
+
+        self::assertSame(
+            'l-adresse-email-de-l-utilisateur-est-test-domain-com',
+            $this->normalizer->slugify("L'adresse email de l'utilisateur est test@domain.com")
+        );
+        self::assertSame('', $this->normalizer->slugify('   !!!   '));
+    }
 }

@@ -104,4 +104,23 @@ final readonly class TextNormalizer
 
         return explode(' ', $normalized);
     }
+
+    /**
+     * Converts the text to a clean URL/identifier slug.
+     */
+    public function slugify(string $text, string $separator = '-'): string
+    {
+        $tokens = $this->tokenize($text);
+
+        return implode($separator, $tokens);
+    }
+
+    /**
+     * Computes a deterministic cryptographic fingerprint hash of the slugified text.
+     * Equivalent strings with typographical or casing variations produce identical hashes.
+     */
+    public function hash(string $text, string $algo = 'sha256'): string
+    {
+        return hash($algo, $this->slugify($text));
+    }
 }
