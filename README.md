@@ -19,9 +19,10 @@ produces a **comparison key in the original script**. Pick accordingly:
 
 | You want | Use |
 |---|---|
-| A URL slug (`crème` → `creme`) | [`cocur/slugify`](https://github.com/cocur/slugify) or `symfony/string` |
+| A URL slug guaranteed ASCII, whatever the input script | [`cocur/slugify`](https://github.com/cocur/slugify) or `symfony/string` |
 | Transliteration into Latin (`مدرسة` → `madrasa`) | `ext-intl` `Transliterator` |
 | A comparison key that stays Arabic (`مَدْرَسَة` → `مدرسه`) | **this package** |
+| A slug in the original script (`crème` → `creme`, `مَدْرَسَة` → `مدرسه`) | **this package**, `slugify()` |
 
 The distinction matters for search. Transliterating Arabic to Latin collapses
 unrelated roots onto the same consonant skeleton and produces a key you cannot
@@ -49,6 +50,31 @@ $normalizer->normalize('Quelle est la MÉTÉO à Rabat ?');
 $normalizer->tokenize('token-2024');
 // ['token', '2024']
 ```
+
+### Slugs and stable hashes
+
+```php
+$normalizer->slugify("L'adresse email de l'utilisateur");
+// "l-adresse-email-de-l-utilisateur"
+
+$normalizer->slugify('Météo à Rabat', '_');
+// "meteo_a_rabat"
+
+$normalizer->hash("L'adresse email");
+$normalizer->hash('L’ADRESSE   email.');
+// identical — same normalization, same digest
+```
+
+`slugify()` joins the tokens `tokenize()` already produces, so a slug never
+disagrees with the rest of the package about where a word ends. Text that
+normalizes to nothing yields an empty string.
+
+`hash()` digests the slug (`sha256` by default, any `hash()` algorithm on
+request). Two strings this package considers equivalent — casing, typographic
+apostrophes, collapsed spacing, trailing punctuation — always produce the same
+digest, which is what makes it usable as a deduplication or lookup key. It is
+not a password hash and carries no salt: it is a fingerprint of meaning, not a
+secret.
 
 ### Analyzing text with metadata
 
@@ -121,7 +147,9 @@ one are two different strings, and your index answers nothing.
 **Combining marks a profile does not claim are preserved**, attached to their
 letter rather than treated as word boundaries.
 
-**No clock, no I/O, no configuration files.** One object, two methods.
+**No clock, no I/O, no configuration files.** One object, and every method
+answers from `normalize()` — `tokenize()` splits it, `slugify()` rejoins it,
+`hash()` digests it, `analyze()` describes it. Nothing folds text a second way.
 
 ## Testing
 

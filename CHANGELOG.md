@@ -5,6 +5,28 @@ All notable changes to `cleatsquad/php-text-normalizer` will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-17
+
+Both additions were already being written by hand on top of `tokenize()`, which
+is how two call sites end up with different answers for the same string.
+
+### Added
+
+- `TextNormalizer::slugify(string $text, string $separator = '-')`: joins the
+  tokens `tokenize()` already produces, so a slug can never disagree with the
+  rest of the package about where a word ends. Text that normalizes to nothing
+  yields an empty string. It is not an ASCII slugger — non-Latin input stays in
+  its own script, folded but not transliterated, which is the same distinction
+  the README already draws against `cocur/slugify`.
+- `TextNormalizer::hash(string $text, string $algo = 'sha256')`: digests the
+  slug. Two strings this package considers equivalent — casing, typographic
+  apostrophes, collapsed spacing, trailing punctuation — always produce the
+  same digest, which is what makes it usable as a deduplication or lookup key.
+  Unsalted and deterministic by design: a fingerprint of meaning, not a secret,
+  and never a password hash.
+
+No behaviour changed. `normalize()`, `tokenize()` and `analyze()` are untouched.
+
 ## [1.0.0] - 2026-08-14
 
 `NormalizerProfile` has been used by every feature added since `0.1.0` without

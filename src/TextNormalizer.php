@@ -106,7 +106,8 @@ final readonly class TextNormalizer
     }
 
     /**
-     * Converts the text to a clean URL/identifier slug.
+     * Joins the normalized tokens into a slug, in the text's own script.
+     * Not an ASCII slug: non-Latin input stays non-Latin, folded but not transliterated.
      */
     public function slugify(string $text, string $separator = '-'): string
     {
@@ -116,8 +117,8 @@ final readonly class TextNormalizer
     }
 
     /**
-     * Computes a deterministic cryptographic fingerprint hash of the slugified text.
-     * Equivalent strings with typographical or casing variations produce identical hashes.
+     * Digests the slug, so equivalent strings share one key. A fingerprint, not a secret:
+     * unsalted and deterministic by design, never a password hash.
      */
     public function hash(string $text, string $algo = 'sha256'): string
     {
